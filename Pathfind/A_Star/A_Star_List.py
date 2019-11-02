@@ -1,9 +1,9 @@
 """
-This code applies A* algorithm to a given weights matrix (0 for impassable)
+This code implements an adaptable version of A* pathfinding algorithm
 """
 
-class Node():
-    """A node class for A* Pathfinding"""
+class A_Star_Node():
+    """A node class for A* pathfinding algorithm"""
 
     def __init__(self, position, previous=None):
         self.position = position
@@ -19,6 +19,9 @@ class Node():
     def __eq__(self, other):
         return self.position == other.position
 
+    def __lt__(self, other):
+        return self.f < other.f
+
 
 def A_Star(start, end, adjacency_func, cost_func, heuristic_func):
     """
@@ -31,18 +34,18 @@ def A_Star(start, end, adjacency_func, cost_func, heuristic_func):
             start node position
         - end
             end node position
-        - adjacency_func(node)
+        - adjacency_func(node_pos)
             function that yield each adjacent position
-        - cost_func(node1, node2)
+        - cost_func(node1_pos, node2_pos)
             function that returns the cost from node1 to node2
-        - heuristic_func(node1, node2)
+        - heuristic_func(node1_pos, node2_pos)
             function that returns the heuristcs from node1 to node2
     """
 
     # Create start and end node
-    start_node = Node(start)
+    start_node = A_Star_Node(start)
     start_node.g = cost_func(None, start)
-    end_node = Node(end)
+    end_node = A_Star_Node(end)
 
     # Initialize both open and closed list
     open_list = []
@@ -50,19 +53,14 @@ def A_Star(start, end, adjacency_func, cost_func, heuristic_func):
     # Add the start node
     open_list.append(start_node)
 
-    # Loop until you find the end
+    # Loop until find the end
     while len(open_list) > 0:
 
         # Get the current node
-        current_node = open_list[0]
-        current_index = 0
-        for index, item in enumerate(open_list):
-            if item.f < current_node.f:
-                current_node = item
-                current_index = index
+        current_node = min(open_list)
 
         # Pop current off open list, add to closed list
-        open_list.pop(current_index)
+        open_list.remove(current_node)
         closed_list.append(current_node)
 
         # Found the goal
@@ -78,7 +76,7 @@ def A_Star(start, end, adjacency_func, cost_func, heuristic_func):
         for new_position in adjacency_func(current_node.position):
 
             # Create new node
-            new_node = Node(new_position, current_node)
+            new_node = A_Star_Node(new_position, current_node)
 
             # New node is on the closed list
             if new_node in closed_list:
@@ -89,7 +87,7 @@ def A_Star(start, end, adjacency_func, cost_func, heuristic_func):
 
             # New node is already in the open list
             for open_node in open_list:
-                if new_node == open_node and new_node.g > open_node.g:
+                if new_node == open_node and new_node.g >= open_node.g:
                     break
             else:
                 # Set the new node heuristic
@@ -97,54 +95,3 @@ def A_Star(start, end, adjacency_func, cost_func, heuristic_func):
                 
                 # Add the new node to the open list
                 open_list.append(new_node)
-
-
-import os
-os.system('cls')
-
-print("Enter the weights matrix (0 for impassable, EOF to stop entering):\n")
-maze = []
-while True:
-    try:
-        maze.append(list(map( int,input().split() )))
-    except:
-        break
-
-start = tuple(map( int,input("Start: ").split() ))
-end   = tuple(map( int,input("End:   ").split() ))
-
-def adjacency(n1_pos):
-    l0, c0 = n1_pos
-    for l,c in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
-        try:
-            if (l0+l >= 0) and (c0+c >= 0) and (maze[l0+l][c0+c] != 0):
-                yield (l0+l,c0+c)
-        except:
-            continue
-
-cost     = lambda n1_pos, n2_pos: maze[n2_pos[0]][n2_pos[1]]
-distance = lambda n1_pos, n2_pos: (((n1_pos[0] - n2_pos[0]) ** 2) + ((n1_pos[1] - n2_pos[1]) ** 2)) ** (1/2)
-
-path, weight = A_Star(start, end, adjacency, cost, distance)
-
-maze[start[0]][start[1]] = '>'
-maze[end[0]][end[1]]     = '>'
-
-for x,y in path[1:]:
-    os.system('cls')
-    for line in maze:
-        print( " ".join([ str(c) for c in line ]) )
-    input()
-    maze[x][y] = '.'
-
-print("Path =",path)
-print("Weight =",weight)
-
-"""
-1 1 0 0 1 0
-1 0 1 0 2 1
-1 3 1 2 1 1
-2 1 1 0 2 1
-0 1 2 0 2 1
-1 1 1 2 1 1
-"""
